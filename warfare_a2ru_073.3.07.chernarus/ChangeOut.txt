@@ -1,0 +1,933 @@
+﻿060813-001
+/// Valhalla HALO Jump ///
+НЕ ИСПРАВЛЕНО :-/
+=====================
+Error in expression <mstpsraswrfldnon";
+};
+
+(finddisplay 46) displayremoveeventhandler ["keydown",bis>
+  Error position: <displayremoveeventhandler ["keydown",bis>
+  Error Type Any, expected Number
+File mpmissions\__CUR_MP.chernarus\Addon\Valhalla\Client\Func_Client_Halo.sqf, line 118
+=====================
+
+Добавлена отладочная информация в скрипт, надо проверить исполняется ли он дважды.
+Для этих целей каждый вход в функцию сопровождается генерацией Thread ID. Новый
+поток не должен начать работу, пока не завершился предыдущий, иначе возможно
+что предыдущий стирает (nil) переменные, в то время как новый их использует. Возможно
+стирание переменных производится в другом месте, это неизвестно и необходимо выяснить.
+--
+Prodavec
+
+
+060813-001
+///WF Menu -100 ///
+client/init/init_client.sqf
+Options = player addAction ["<t color='#42b6ff'>" + (localize "STR_WF_Options") + "</t>","Client\Action\Action_Menu.sqf", "", -1, false, true, "", "_target == player"];
+
+
+/// слотовые скиллы -101 ///
+client/module/skill/skill_apply.sqf
+
+
+
+
+
+
+///Полевой ремонт -103 ///
+addon/valhalla/client/Func_Client_AddLockActions.sqf
+_veh addAction ["<t color='#4C4FFF'>"+(format[localize "STR_ACT_FieldRepair",_name])+"</t>","Addon\Valhalla\Client\Script_Client_Actions.sqf",[6],-103,false,true,"", "(Local_PlayerVehicle==player) && (alive _target) && ((side _target) in [Local_PlayerSide,civilian]) && (!(canMove _target) || ((getDammage _target)>0.1) || (((fuel _target)==0) && !(_target getVariable 'ignition_off'))) && !Local_TechnicalService"];			
+
+
+240413-004
+в серверный лог добавлены координаты уничтоженной MHQ
+
+\Server\Functions\Server_OnHQKilled.sqf
+
+
+["INFORMATION", Format["Server_OnHQKilled.sqf : [%1] HQ [%2] has been destroyed by [%3], Teamkill? [%4], Side Teamkill? [%5] coord#1 %6  coord#2 %7", _side, _structure_kind, name _killer, _teamkill, side _killer, getpos _structure ,  _hqc ]] Call WFBE_CO_FNC_LogContent;
+
+
+
+
+
+240413-003
+новый Warfare.jpg (от канопа)
+
+
+240413-002
+Изменение условий победы supremacy
+\Server\FSM\updateserver.fsm
+	if (!(alive _hq) && _factories == 0 || _towns > _total*0.7 && !WFBE_GameOver) then {
+	
+добавлено _total*0.7 	
+
+
+
+240413-001
+FIX раннего исчезновенния трубы у ПТРК
+\Addon\Valhalla\Client\Func_System_Fired.sqf
+вместо:
+				_weapon spawn { sleep 2.5; player removeWeapon _this};
+
+конструкция:
+				    [_weapon,_player,_ammo] spawn 
+						{ 
+								waitUntil {!alive (_this select 2)};
+								player removeWeapon (_this select 0);
+                        }; 
+
+
+
+
+
+
+
+230413-003
+server_TrashObject.sqf
+sleep заменен на uisleep
+
+
+230413-002
+попытка FIXа исчезновенния MHQ
+server_OnHQKilled.sqf
+
+	uiSleep 1;
+	_hq setPosATL [ getPosATL _structure select 0, getPosATL _structure select 1, 1];
+
+
+
+
+
+230413-002
+
+переделано строительство и нестроительство заводов при вкл/выкл. параметра Town=Factory
+
+
+IF (WFBE_C_TOWNFACTORY==1) then {WFBE_C_TOWNFACTORY_BUILD = 1 ; _checkOut3=true;} else {_checkOut3=false;};
+										_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+										_structureType ="Fort_RazorWire";
+										switch (_side) do
+										{
+											case "EAST": 
+														{
+															_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+															_structureType ="US_WarfareBContructionSite1_Base_EP1";
+														};	
+											case "WEST": 
+														{
+															_structures = (east) Call WFBE_CO_FNC_GetSideStructures;
+															_structureType ="TK_WarfareBContructionSite1_EP1";
+														 };
+							
+										};
+									_xx01=["UF", "AF","SP","AAR","HF","LF"];
+									_xx02=	[
+														["US_WarfareBBarracks_EP1","TK_WarfareBBarracks_EP1"],
+														["US_WarfareBAircraftFactory_EP1","TK_WarfareBAircraftFactory_EP1"],
+														["US_WarfareBContructionSite1_Base_EP1","TK_WarfareBContructionSite1_EP1"],
+														["US_WarfareBAntiAirRadar_EP1","TK_WarfareBAntiAirRadar_EP1"],
+														["US_WarfareBHeavyFactory_EP1","TK_WarfareBHeavyFactory_EP1"],
+														["US_WarfareBLightFactory_EP1","TK_WarfareBLightFactory_EP1"]
+													];
+									if ( _xx01 find (_kinds select 0) > -1 && (_checkOut3)) then 	
+									{
+										_structureType = ( _xx02 select (_xx01 find (_kinds select 0) ) ) select  ( if (_side==west) then {0} else {1} );
+										 switch (_side) do
+											{
+												case east:	
+													{
+													 	_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+													};
+												case west:	
+													{
+													 	_structures = (east) Call WFBE_CO_FNC_GetSideStructures;
+													};
+												case resistance: {_checkOut2 = true};	
+											};
+											_pos =  getPos _defense_logic;
+											_dir = direction _defense_logic;
+											_position =  getPos _defense_logic;
+											_closest = [_position,_structures] Call WFBE_CO_FNC_GetClosestEntity;
+											if (!isNull _closest) then 
+											{
+												//--- 100 meters close only.
+												if (_closest distance _position < 100) then 
+														{
+															//--- Spawn a sell thread.
+															(_closest) Spawn 
+																			{
+																				Private ["_closest","_delay","_id","_supplyB","_type"];
+																				_closest = _this;
+																				_closest setVariable ["WFBE_SOLD", true];
+																				_delay = missionNamespace getVariable "WFBE_C_STRUCTURES_SALE_DELAY";
+																				_type = typeOf _closest;
+																				if !(alive _closest) exitWith {};
+																				_closest setDammage 1;
+																			};
+														};
+											};
+											_index = (missionNamespace getVariable Format ["WFBE_%1STRUCTURENAMES",str _side]) find _structureType;
+											if (_index != -1) then 
+											{
+												_script = (missionNamespace getVariable Format ["WFBE_%1STRUCTURESCRIPTS",str _side]) select _index;
+												[_structureType,_side,_pos,_dir,_index] ExecVM (Format["Server\Construction\Construction_%1.sqf",_script]);
+											};
+									}
+									else
+									{
+														Private["_entitie"];
+														_entitie = createVehicle [_defense, getPos _defense_logic, [], 0, "NONE"];
+														_entitie setDir (direction _defense_logic);
+														_entitie setPos (getPos _defense_logic);
+														_entitie addEventHandler ['killed', Format ["[_this select 0, _this select 1, %1] Spawn WFBE_CO_FNC_OnUnitKilled;", _sideID]];
+														_defense_logic setVariable ["wfbe_defense", _entitie];
+									};
+
+
+
+
+
+
+
+
+
+230413-001
+\Server\Construction\Construction_StationaryDefense.sqf
+замена конструкций 
+
+_dly = time + 10;
+waitUntil {time > _dly};
+на 
+uisleep 
+
+
+
+OU200413-003
+Введен экспериментальный параметр - прочность городских построек
+Exp: Damage Building (town)
+у него три возможных значения
+default (по умолчанию) не производится никаких действий с городскими постройками. Дополнительная нагрузка отсутствует вовсе
+No Damage (Неуничтожаемые постройки в городах) городские постройки уничтожить нельзя (к кэмпам и заводам это не относится)
+Damage / 5 (Усиленная прочность построек городов) городские постройки становятся в несколько раз прочнее,но уничтожить их можно
+
+stringtable.xml
+	  <Key ID="STR_WF_PARAMETER_TOWNS_DamageBuilding">
+        <English>Exp: Damage Building (town)</English>
+        <French>Exp: Damage Building (town)</French>
+        <German>Exp: Damage Building (town)</German>
+        <Russian>Exp: Damage Building (town)</Russian>
+        <Italian>Exp: Damage Building (town)</Italian>
+      </Key>	
+	  <Key ID="STR_WF_PARAMETER_DB_Default">
+        <English>Default</English>
+        <French>Default</French>
+        <German>Default</German>
+        <Russian>по умолчанию</Russian>
+        <Italian>Default</Italian>
+      </Key>	
+	  <Key ID="STR_WF_PARAMETER_DB_FALSE">
+        <English>No Damage</English>
+        <French>No Damage</French>
+        <German>No Damage</German>
+        <Russian>Неуничтожаемые постройки в городах</Russian>
+        <Italian>No Damage</Italian>
+      </Key>	
+	  <Key ID="STR_WF_PARAMETER_DB_20">
+        <English>Damage / 5</English>
+        <French>Damage / 5</French>
+        <German>Damage / 5</German>
+        <Russian>Усиленная прочность построек городов</Russian>
+        <Italian>Damage / 5</Italian>
+      </Key>		  
+
+	  
+Common\init\init_town.sqf
+
+_anchorPos=getpos _town;
+_anchorDim=500;
+
+switch (WFBE_C_TOWNS_DamageBuilding) do 
+	{
+		case 1:
+			{
+				_objs = nearestObjects [_anchorPos, ["All"], _anchorDim];
+				{
+					_x allowDamage false
+				} foreach _objs;
+	
+			};
+		case 2:
+			{
+				_objs = nearestObjects [_anchorPos, ["All"], _anchorDim];
+				{
+					_x addEventHandler ['handleDamage',{getDammage (_this select 0)+(_this select 2)/5}];
+				} foreach _objs;
+			
+			};
+	};
+
+	
+OU200413-002
+В набор городов по умолчанию(Large) добавлен Нур
+mission.sqm
+init="this setVariable [""totalTowns"",31];this setVariable [""Towns_RemovedXSmall"",[""FeeruzAbad"",""Nagara"",""Garmsar"",""Bastam"",""Zavarak"",""ChakChak"",""Sakhee"",""Garmarud"",""Falar"",""Chaman"",""Mulladoost"",""Nur"",""Karachinar"",""Rasman"",""Ravanay"",""Imarat"",""Shamali"",""Gospandi"",""Landay"",""Jaza"",""Timurkalay"",""Sultansafee"",""Shukurkalay"",""Jilavur"",""Khushab"",""Kakaru"",""Anar"",""HazarBagh""]];this setVariable [""Towns_RemovedSmall"",[""FeeruzAbad"",""Garmsar"",""Zavarak"",""ChakChak"",""LoyManara"",""Sakhee"",""Garmarud"",""Falar"",""Chaman"",""Mulladoost"",""Chardarakht"",""Karachinar"",""Ravanay"",""Imarat"",""Landay"",""Jaza"",""Timurkalay"",""Huzrutimam"",""Sultansafee"",""Shukurkalay"",""Jilavur"",""Khushab"",""Kakaru"",""Anar"",""HazarBagh""]];this setVariable [""Towns_RemovedMedium"",[""FeeruzAbad"",""Garmsar"",""Zavarak"",""ChakChak"",""LoyManara"",""Sakhee"",""Chaman"",""Chardarakht"",""Nur"",""Karachinar"",""Ravanay"",""Landay"",""Jaza"",""Timurkalay"",""Huzrutimam"",""Sultansafee"",""Shukurkalay"",""Jilavur"",""Kakaru"",""Anar"",""HazarBagh""]];this setVariable [""Towns_RemovedLarge"",[""Chaman"",""HazarBagh""]];nullReturn = [this] ExecVM ""Common\Init\Init_TownMode.sqf""";
+
+OU200413-001
+Система помощи (на основе руководства Раската)
+Добавлена папка \Addon\Help_System
+внесены изменения в 
+Dialog.hpp
+		/// Parameters /// 
+		class CA_PA_Button : RscClickableText {
+			idc = 11012;
+			x = 0.688103;
+			y = 0.749671;
+			w = 0.1;
+			h = 0.1;
+			text = "\ca\ui\data\icon_mission_repair_ca.paa";
+			action = "MenuAction = 12";
+			tooltip = $STR_WF_TOOLTIP_Parameter;
+		};
+		class CA_HELPSYSTEM_Button : RscClickableText {
+			idc = 11012;
+			x = 0.658103;
+			y = 0.769671;
+			w = 0.04;
+			h = 0.04;
+			text = "\ca\ui\data\iconvehicle_ca.paa";
+			action = "MenuAction = 16";
+			tooltip = $STR_WF_TOOLTIP_HelpSystem;
+		};	
+
+в stringtable.xml
+	   <Key ID="STR_HELPSYSTEMFOLDER">
+        <English>EN</English>
+        <French>FR</French>
+        <German>DE</German>
+        <Russian>RU</Russian>
+        <Italian>IT</Italian>
+      </Key>
+	  <Key ID="STR_WF_TOOLTIP_HelpSystem">
+        <English>Help</English>
+        <French>Help</French>
+        <German>Help</German>
+        <Russian>Помощь</Russian>
+        <Italian>Help</Italian>
+      </Key>	
+
+в GUI_Menu.sqf
+	//--- Display Help.
+	if (MenuAction == 16) exitWith { //added-MrNiceGuy
+		MenuAction = -1;
+		closeDialog 0;
+		createDialog "WF_Help_System";
+	};
+
+
+
+
+
+
+OU140413-001
+Награда за обнаружение врага с беспилотника - 300долл. за единицу
+файл \Addon\Valhalla\UAV\Func_UAV_KeyPress.sqf
+											_bounty = 300;
+											_bounty Call ChangePlayerFunds;
+
+
+OU140413-002
+Награда за миссию - найти модуль UAV   ( 3000 supply  команде и 10 000 долл игроку)
+\Server\Module\Missions\M_UAV_RetrieveModule\m_init.sqf
+
+//--- Give the 'winning' side an award.
+_winner = if (_ecomplete) then {east} else {west};
+[_winner, "LocalizeMessage", ['SecondaryAwardSupply','Supply',_winner,3000]] Call WFBE_CO_FNC_SendToClients;
+[_winner, "LocalizeMessage", ['SecondaryAward','$',10000]] Call WFBE_CO_FNC_SendToClients;
+
+
+
+
+OU140413-003
+Попытка решить проблему : неинициализации скриптов valhalla:
+
+файл dialogs.hpp
+в диалог WF_Menu добавлено:
+
+
+			class CA_AV_Button : RscClickableText {
+			idc = 11015;
+			x = 0.504088;
+			y = 0.737144;
+			w = 0.045;
+			h = 0.045;
+			text = "\ca\ui\data\icon_task_ca.paa";
+			action = "MenuAction = 15";
+			tooltip = $STR_WF_TOOLTIP_Unflip;
+		};
+
+в Client\GUI\GUI_Menu.sqf
+добавлено
+	//--- vallhala fix.
+	if (MenuAction == 15) then { //added-MrNiceGuy
+		MenuAction = -1;
+		closeDialog 0;
+		ExecVM "Addon\Init_Valhalla.sqf"; //--- Execute VH init scripts.
+		};
+		
+!!!!!!!!!!!!!!!! 
+- использовать только в случае не инициализации скриптов и ТОЛЬКО 1 раз
+- не проверялось,как этот fix отразиться на других игроков, у которых инициализация прошла успешно
+
+
+
+OU130413-001
+изменен файл coin_interface.sqf
+//////////////////////////////////
+						if (_class in _defenses) then {
+							// WFBE_RequestDefense = ['SRVFNCREQUESTDEFENSE',[sideJoined,_class,_pos,_dir,manningDefense]];
+							// publicVariable 'WFBE_RequestDefense';
+							// if (isHostedServer) then {['SRVFNCREQUESTDEFENSE',[sideJoined,_class,_pos,_dir,manningDefense]] Spawn HandleSPVF};
+							if (_class == "Land_Wall_L3_pillar_EP1") then 
+								{ 
+									if(WFBE_COIN_Root == "HQ") then 
+										{
+											["RequestDefense", [sideJoined,_class,_pos,_dir,manningDefense]] Call WFBE_CO_FNC_SendToServer;
+											lastBuilt = _par;
+										}
+										else
+										{
+											lastBuilt = _par;
+										};
+								}
+								else
+								{
+									["RequestDefense", [sideJoined,_class,_pos,_dir,manningDefense]] Call WFBE_CO_FNC_SendToServer;
+									lastBuilt = _par;
+								};
+						};
+//////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+в файл \Common\Config\Core\Core_TKA.sqf
+//////////////////////////////////
+_c = _c + ['Land_Wall_L3_pillar_EP1'];
+_i = _i + [['Pillar','',1500,0,0,0,'Fortification',0,'Takistani Army',[]]];
+//////////////////////////////////
+
+
+
+в файлы Structures_CO_RU.sqf / Structures_OA_TKA.sqf / Structures_CO_US.sqf
+//////////////////////////////////
+_n = _n		+ ["Land_Wall_L3_pillar_EP1"];
+//////////////////////////////////
+
+
+
+
+в файл : 
+\Server\Construction\Construction_StationaryDefense.sqf
+//////////////////////////////////
+if (_type=='Land_Wall_L3_pillar_EP1') then 
+	{
+			_objM=_defense;
+			_obj1 = nearestObjects [_objM, ["Land_Wall_L3_pillar_EP1"], 1000];
+					if (count _obj1 == 2 ) then 
+						{
+							_obj = _obj1 select 1;
+							_destination  = getPos _obj;
+							_position = getPos _objM;
+							_xcoord = (_destination select 0) - (_position select 0);
+							_ycoord = (_destination select 1) - (_position select 1);
+							_direction =  -(((_ycoord atan2 _xcoord) + 270) % 360);
+							if (_direction < 0) then {_direction = _direction + 360};
+							_objM setDir _direction; 
+							_distance = sqrt ((_xcoord ^ 2) + (_ycoord ^ 2)) ;
+							_countWall = floor(_distance / 5);
+							_i = 1;
+							_j=-2;
+							_defense1=_objM;
+							while {_i<_countWall} do
+							{
+								_i=_i+1;
+								_j=_j+5.2;
+								_defense = createVehicle ["Land_Wall_L3_5m_EP1", _position, [], 0, "NONE"];
+								sleep 0.5;
+								_defense attachTo [_objM,[0,_j,0]];
+								sleep 0.5;
+								_defense setDir -90; 
+								sleep 0.5;
+								detach _defense;
+								_defense setPosATL [ getPosATL _defense select 0, getPosATL _defense select 1,getPosATL player select 2];
+								sleep 0.5;
+							};
+							sleep 1;
+							deleteVehicle _objM;
+							deleteVehicle _obj;
+						};
+	};
+//////////////////////////////////
+
+
+
+
+
+OU120413-001
+задержка в установке мин в 1 сек.
+\Server\Construction\Construction_StationaryDefense.sqf
+if (_type == 'Sign_Danger') exitWith {
+	Private ["_c","_h","_mine","_mineType","_toWorld"];
+	_mineType = if (_side == west) then {'MineMine'} else {'MineMineE'};
+	_h = -4;
+	_c = 0;
+	for [{_z=0}, {_z<9}, {_z=_z+1}] do{
+		_array = [((_defense worldToModel (getPos _defense)) select 0) - 16 +_c,((_defense worldToModel (getPos _defense)) select 1) + _h];
+		_toWorld = _defense modelToWorld _array;
+		_toWorld set[2,0];
+		_mine = createMine [_mineType, _toWorld,[], 0];
+		_c = _c + 4;
+		sleep 1;
+	};
+
+	_h = 0;
+	_c = 2;
+	for [{_z=0}, {_z<8}, {_z=_z+1}] do{
+		_array = [((_defense worldToModel (getPos _defense)) select 0) - 16 +_c,((_defense worldToModel (getPos _defense)) select 1) + _h];
+		_toWorld = _defense modelToWorld _array;
+		_toWorld set[2,0];
+		_mine = createMine [_mineType, _toWorld,[], 0];
+		_c = _c + 4;
+		sleep 1;
+	};
+
+	_h = 4;
+	_c = 0;
+	for [{_z=0}, {_z<9}, {_z=_z+1}] do{
+		_array = [((_defense worldToModel (getPos _defense)) select 0) - 16 +_c,((_defense worldToModel (getPos _defense)) select 1) + _h];
+		_toWorld = _defense modelToWorld _array;
+		_toWorld set[2,0];
+		_mine = createMine [_mineType, _toWorld,[], 0];
+		_c = _c + 4;
+		sleep 1;
+	};
+	deleteVehicle _defense;
+};
+
+OU120413-002
+задержка в постройке High стен.
+\Server\Construction\Construction_StationaryDefense.sqf
+
+_typeFHW=["Land_Wall_L3_5m_ruins_EP1","Wall_L1_5m_EP1","Land_Wall_L_Mosque_1_ruins_EP1"];
+/////////// delay for High Wall ////////////
+if (_type=='Land_Wall_L3_5m_EP1') then 
+	{
+		
+		{
+					_defense = createVehicle [_x, _position, [], 0, "NONE"];
+					_defense setDir _direction;
+					_defense setPos _position;
+					sleep 10;
+					deleteVehicle _defense;
+		} forEach _typeFHW;
+		
+	};
+//////////////////////////////
+
+
+OU120413-003
+fix некоторые заводы строились мгновенно
+в server_spawntowndefense.sqf  добавлено
+IF (WFBE_C_TOWNFACTORY==1) then {WFBE_C_TOWNFACTORY_BUILD = 1};		
+
+
+
+
+
+
+
+
+OU050413-001
+\Rsc\Parameters.hpp
+параметр  -  WFBE_C_TOWNFACTORY перенесен вниз
+
+
+
+
+OU050413-002 
+\Common\Functions\Common_BalanceInit.sqf
+ case "M6_EP1": {
+		_this removeWeapon "M242BC";
+        _this addWeapon "M230";
+        _this addMagazine "1200Rnd_30x113mm_M789_HEDP";
+......
+
+
+	case "BRDM2_ATGM_TK_EP1":
+     {
+        _this removeMagazines "5Rnd_AT5_BRDM2";
+        _this removeWeapon "AT5Launcher";
+        _this  addMagazine "2Rnd_Igla";
+        _this addMagazine "2Rnd_Igla";
+        _this addMagazine "2Rnd_Igla";
+        _this addMagazine "2Rnd_Igla";
+        _this addMagazine "2Rnd_Igla";
+        _this addWeapon "Igla_twice";
+      }; 
+	  case "M1135_ATGMV_EP1":
+       {
+        _this removeWeapon "TOWLauncher";
+        _this removeMagazines "2Rnd_TOW";
+        _this addWeapon "TOWLauncherSingle";
+        _this addMagazine "6Rnd_TOW_HMMWV";
+        _this addMagazine "6Rnd_TOW_HMMWV";
+    };  
+	case "HMMWV_Avenger":
+       {
+        _this removeWeapon "M3P";
+        _this removeMagazines "250Rnd_127x99_M3P";
+        _this addWeapon "M230";
+        _this addMagazine "1200Rnd_30x113mm_M789_HEDP";
+    }; 
+	case "HMMWV_Avenger_DES_EP1":
+    {
+        _this removeWeapon "M3P";
+        _this removeMagazines "250Rnd_127x99_M3P";
+        _this addWeapon "M230";
+        _this addMagazine "1200Rnd_30x113mm_M789_HEDP";
+    }; 
+	
+	
+	
+
+
+
+
+OU050413-003
+ \Addon\Valhalla\Common\Config_SubSystems.sqf
+ System_ArmoredVehicleTypes=[["BTR90_HQ",3],["M1130_CV_EP1",3],["LAV25",2],["AAV",2],["M1126_ICV_M2_EP1",2],["M1126_ICV_mk19_EP1",2],["M1128_MGS_EP1",2],["M1135_ATGMV_EP1",2],["M2A2_EP1",2],["M2A3_EP1",2],["M6_EP1",2],["M1A1_US_DES_EP1",3],["M1A2_US_TUSK_MG_EP1",3],["M1A1",3],["M1A2_TUSK_MG",3],["BAF_FV510_D",2],["BAF_FV510_W",2],["BMP2_INS",2],["BMP2_TK_EP1",2],["BTR90",2],["BMP3",2],["T72_RU",3],["T72_TK_EP1",3],["T90",3],["GAZ_Vodnik_HMG",3]];  
+
+
+
+
+
+OU050413-004
+\Server\FSM\server_victory_threeway.fsm
+	if (!(alive _hq)  && _factories == 0 || _towns > _total*0.75 && !WFBE_GameOver) then {
+
+добавлено *0.75
+
+
+
+OU050413-005
+\Rsc\Parameters.hpp
+параметр  -  WFBE_C_BASE_DEFENSE_MAX_AI 
+default = 0;
+
+
+
+
+
+OU050413-006
+\Common\Config\Core\Core_TKA.sqf
+
+
+_c = _c + ['BRDM2_ATGM_TK_EP1'];
+_i = _i + [['BRDM-2 Igla version','',2650,22,-2,2,1,0,'Takistani Army',[]]];
+
+
+
+
+OU240313-001
+
+initJIPCompatible.sqf 
+	добавлено : WF_LOG_O = 0;  // 0 - отключение логирования | 1- включение логирования
+
+Common_logContent.sqf 
+соответственно добавлено условие :
+	if (WF_LOG_O==1) then {
+	
+	
+OU240313-002
+Parameters.hpp
+добавлен параметр WFBE_C_TOWNFACTORY 
+0 - выключен
+1 - включен
+Взятие города = постройка завода.
+
+
+
+
+
+	
+Для работы параметра 	WFBE_C_TOWNFACTORY  добавлено в server_spawntowndefense.sqf  (см. прим внизу)
+
+						
+							_checkOut = false;
+							_checkOut1 = false ;
+							_checkOut2 = false ;
+							_checkOut3=false;
+							IF (WFBE_C_TOWNFACTORY==1) then 
+							{
+							["INFORMATION", Format ["SpawnPavka.sqf before WFBE_C_TOWNFACTORY: [%1]", WFBE_C_TOWNFACTORY ]] Call WFBE_CO_FNC_LogContent;
+							_checkOut3=true;
+							}
+							else
+							{
+							["INFORMATION", Format ["SpawnPavka.sqf before WFBE_C_TOWNFACTORY: [%1]", WFBE_C_TOWNFACTORY ]] Call WFBE_CO_FNC_LogContent;
+							_checkOut3=false;
+							};
+							_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+							_structureType ="Fort_RazorWire";
+							
+							
+							switch (_side) do
+							{
+									case "EAST": {
+									_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+									_structureType ="US_WarfareBContructionSite1_Base_EP1";};	
+									case "WEST": {
+									_structures = (east) Call WFBE_CO_FNC_GetSideStructures;
+									_structureType ="TK_WarfareBContructionSite1_EP1";
+									};
+							
+							};
+							
+							switch (_kinds select 0) do
+							{
+									case "UF":	
+									{
+											_checkOut = true;	
+												switch (_side) do { 
+													case west: 
+													{
+													_structures = (east) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="US_WarfareBBarracks_EP1";
+													_checkOut1 = true ;
+													};
+													case east: 
+													{
+													_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="TK_WarfareBBarracks_EP1";
+													_checkOut1 = true ;
+													};
+													case resistance: {_checkOut2 = true};									
+													
+												};
+							
+									};
+									case "AF":	
+									{
+											_checkOut = true;	
+												switch (_side) do { 
+													case west: 
+													{
+													_structures = (east) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="US_WarfareBAircraftFactory_EP1";
+													_checkOut1 = true ;
+													};
+													case east: 
+													{
+													_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="TK_WarfareBAircraftFactory_EP1";
+													_checkOut1 = true ;
+													};
+													case resistance: {_checkOut2 = true};									
+												};
+									};
+									case "SP":	
+									{
+											_checkOut = true;	
+												switch (_side) do { 
+													case west: 
+													{
+													_structures = (east) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="US_WarfareBContructionSite1_Base_EP1";
+													_checkOut1 = true ;
+													};
+													case east: 
+													{
+													_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="TK_WarfareBContructionSite1_EP1";
+													_checkOut1 = true ;
+													};
+													case resistance: {_checkOut2 = true};									
+
+												};
+									};									
+									case "AAR":	
+									{
+											_checkOut = true;	
+												switch (_side) do { 
+													case west: 
+													{
+													_structures = (east) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="US_WarfareBAntiAirRadar_EP1";
+													_checkOut1 = true ;
+													};
+													case east: 
+													{
+													_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="TK_WarfareBAntiAirRadar_EP1";
+													_checkOut1 = true ;
+													};
+													case resistance: {_checkOut2 = true};									
+												};
+									};										
+									case "HF":	
+									{
+											_checkOut = true;	
+												switch (_side) do { 
+													case west: 
+													{
+													_structures = (east) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="US_WarfareBHeavyFactory_EP1";
+													_checkOut1 = true ;
+													};
+													case east: 
+													{
+													_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="TK_WarfareBHeavyFactory_EP1";
+													_checkOut1 = true ;
+													};
+													case resistance: {_checkOut2 = true};									
+												};
+									};											
+									case "LF":	
+									{
+											_checkOut = true;	
+												switch (_side) do { 
+													case west: 
+													{
+													_structures = (east) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="US_WarfareBLightFactory_EP1";
+													_checkOut1 = true ;
+													};
+													case east: 
+													{
+													_structures = (west) Call WFBE_CO_FNC_GetSideStructures;
+													_structureType ="TK_WarfareBLightFactory_EP1";
+													_checkOut1 = true ;
+													};
+													case resistance: {_checkOut2 = true};									
+												};
+									};	
+									default
+									{
+									
+														Private["_entitie"];
+														_entitie = createVehicle [_defense, getPos _defense_logic, [], 0, "NONE"];
+														_entitie setDir (direction _defense_logic);
+														_entitie setPos (getPos _defense_logic);
+														_entitie addEventHandler ['killed', Format ["[_this select 0, _this select 1, %1] Spawn WFBE_CO_FNC_OnUnitKilled;", _sideID]];
+														_defense_logic setVariable ["wfbe_defense", _entitie];	
+									};
+						};
+	
+							if (_checkOut3) then{
+									_pos =  getPos _defense_logic;
+									_dir = direction _defense_logic;
+									_position =  getPos _defense_logic;
+									_closest = [_position,_structures] Call WFBE_CO_FNC_GetClosestEntity;
+									if (!isNull _closest) then {
+										//--- 100 meters close only.
+										if (_closest distance _position < 100) then {
+											//--- Spawn a sell thread.
+											(_closest) Spawn {
+												Private ["_closest","_delay","_id","_supplyB","_type"];
+												_closest = _this;
+												_closest setVariable ["WFBE_SOLD", true];
+												_delay = missionNamespace getVariable "WFBE_C_STRUCTURES_SALE_DELAY";
+												_type = typeOf _closest;
+												if !(alive _closest) exitWith {};
+												_closest setDammage 1;
+											};
+										};
+									};
+							};
+						if (_checkOut3)	then {			 
+									_index = (missionNamespace getVariable Format ["WFBE_%1STRUCTURENAMES",str _side]) find _structureType;
+									if (_index != -1) then {
+										_script = (missionNamespace getVariable Format ["WFBE_%1STRUCTURESCRIPTS",str _side]) select _index;
+										[_structureType,_side,_pos,_dir,_index] ExecVM (Format["Server\Construction\Construction_%1.sqf",_script]);
+									};
+						};
+!!!!!!  Еще можно было использовать не switch do ,а массив + цикл. может быть второй способ и быстрее!!!!!!
+
+
+
+
+
+
+OU240313-003
+Добавлена зависимость WFBE_C_UNITS_BOUNTY_COEF от WFBE_C_RESPAWN_PENALTY  (зависимость коэф. награды за уничтожение врага от штрафа за возрождение)
+
+init_CommonConstants.sqf
+
+if (WFBE_C_RESPAWN_PENALTY>0) then 
+		{
+			WFBE_C_UNITS_BOUNTY_COEF = 0.75; 			//--- Bounty is the unit price * coef.
+		}
+		else
+		{
+			WFBE_C_UNITS_BOUNTY_COEF = 0.25; 			//--- Bounty is the unit price * coef.
+		};
+
+
+Соответсвенно не мешало бы подредактировать цены на оружие.
+
+
+
+
+
+OU240313-004
+Добавлена зависимость стоимости upgrade в supply от параметра WFBE_C_TOWNFACTORY
+в случае его включения стоимость upgrade в supply увеличивается в два раза
+
+
+для этого в 
+init_CommonConstants.sqf добавлено
+	if (WFBE_C_TOWNFACTORY>0) then
+		{
+			WFBE_C_UPG_COEF = 2;
+		}
+		else
+		{
+			WFBE_C_UPG_COEF = 1;
+		};
+		
+
+		в GUI_UpgradeMenu.sqf добавлено 
+/////
+_upgrade_supply =  WFBE_C_UPG_COEF * (((_upgrade_costs select _id) select _upgrade_current) select 0);
+/////
+_upgrade_supply = WFBE_C_UPG_COEF * ( ((_upgrade_costs select _id) select _upgrade_current) select 0) ;
+/////
+
+
+
+OU240313-005
+init_CommonConstants.sqf добавлено
+ 	WFBE_C_TOWNFACTORY_BUILD = 0;
+
+	в server_spawntowndefense.sqf  добавлено
+	WFBE_C_TOWNFACTORY_BUILD = 1;	
+	
+	в construction_SmallSite.sqf и в  construction_MediumSite.sqf добавлено
+	if (WFBE_C_TOWNFACTORY_BUILD>0) then {_time = 1};
+	WFBE_C_TOWNFACTORY_BUILD = 0;	
+	
+Здания которые идут бонусом к взятию города строятся за 	_time = 1 ,здания построеные c MHQ с обычным для них временем
+	
+	
+
+	
